@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tic Tac Toe</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="game-wrapper">
+
+
+    <h1 class="game-title">
+      <span class="title-x">X</span>
+      <span class="title-dot"> · </span>
+      <span class="title-o">O</span>
+    </h1>
+
+
+    <div class="scoreboard">
+      <div class="score-card" id="score-x">
+        <span class="score-label">Player X</span>
+        <span class="score-value" id="wins-x">0</span>
+      </div>
+      <div class="score-card draws">
+        <span class="score-label">Draws</span>
+        <span class="score-value" id="draws">0</span>
+      </div>
+      <div class="score-card" id="score-o">
+        <span class="score-label">Player O</span>
+        <span class="score-value" id="wins-o">0</span>
+      </div>
+    </div>
+
+
+    <div class="status-banner" id="status-banner">
+      <span id="status-text">Player X's Turn</span>
+    </div>
+
+
+    <div class="board" id="board">
+      <div class="cell" data-index="0"></div>
+      <div class="cell" data-index="1"></div>
+      <div class="cell" data-index="2"></div>
+      <div class="cell" data-index="3"></div>
+      <div class="cell" data-index="4"></div>
+      <div class="cell" data-index="5"></div>
+      <div class="cell" data-index="6"></div>
+      <div class="cell" data-index="7"></div>
+      <div class="cell" data-index="8"></div>
+    </div>
+
+
+    <div class="controls">
+      <button class="btn-reset" id="btn-reset">↺ New Game</button>
+    </div>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
