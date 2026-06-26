@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Real-time multiplayer Tic-Tac-Toe game">
+  <title>Tic-Tac-Toe Multiplayer</title>
+  <style>
+    /* =====================================================================
+       RESET & BASE STYLES
+       ===================================================================== */
+    *, *::before, *::after { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+    }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2e3147;
+      --accent: #6c63ff;
+      --accent-hover: #5a52e0;
+      --x-color: #ff6b6b;
+      --o-color: #4ecdc4;
+      --text: #e8e9f0;
+      --muted: #8b8fa8;
+      --win-glow: rgba(108, 99, 255, 0.35);
+      --error: #ff6b6b;
+      --success: #4ecdc4;
+      --radius: 14px;
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    /* =====================================================================
+       SCREEN LAYOUT
+       ===================================================================== */
+    .screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 500px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* =====================================================================
+       CARDS & CONTAINERS
+       ===================================================================== */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 32px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    h1 span.x {
+      color: var(--x-color);
+    }
+
+    h1 span.o {
+      color: var(--o-color);
+    }
+
+    .subtitle {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 32px;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 24px 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* =====================================================================
+       FORM ELEMENTS
+       ===================================================================== */
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 500;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input[type="text"]::placeholder {
+      color: var(--muted);
+      font-weight: 400;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.1);
+    }
+
+    #room-input {
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    /* =====================================================================
+       BUTTONS
+       ===================================================================== */
+    .btn {
+      width: 100%;
+      padding: 13px 20px;
+      border-radius: 10px;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+      box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-success {
+      background: var(--o-color);
+      color: #0f1117;
+    }
+
+    .btn-success:hover:not(:disabled) {
+      filter: brightness(1.1);
+    }
+
+    /* =====================================================================
+       ERROR & STATUS MESSAGES
+       ===================================================================== */
+    .error-msg {
+      color: var(--error);
+      font-size: 0.85rem;
+      margin-top: 10px;
+      text-align: center;
+      min-height: 20px;
+    }
+
+    .play-again-status {
+      text-align: center;
+      font-size: 0.9rem;
+      margin-top: 12px;
+      padding: 10px;
+      border-radius: 8px;
+      background: rgba(108, 99, 255, 0.1);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+    }
+
+    .play-again-status.waiting {
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* =====================================================================
+       LOBBY SCREEN
+       ===================================================================== */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      margin-bottom: 8px;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .form-actions .btn {
+      flex: 1;
+    }
+
+    /* =====================================================================
+       WAITING SCREEN
+       ===================================================================== */
+    .room-code-display {
+      font-size: 2.8rem;
+      font-weight: 900;
+      letter-spacing: 0.25em;
+      color: var(--accent);
+      text-align: center;
+      margin: 20px 0 8px;
+    }
+
+    .copy-hint {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-bottom: 28px;
+    }
+
+    .pulse-ring {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0.15;
+      margin: 0 auto 16px;
+      animation: pulseRing 1.8s ease-in-out infinite;
+    }
+
+    @keyframes pulseRing {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 0.15;
+      }
+      50% {
+        transform: scale(1.35);
+        opacity: 0.05;
+      }
+    }
+
+    .waiting-label {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .waiting-player-name {
+      text-align: center;
+      color: var(--text);
+      font-weight: 600;
+      margin-top: 8px;
+    }
+
+    /* =====================================================================
+       GAME SCREEN
+       ===================================================================== */
+    #game-screen {
+      gap: 0;
+      max-width: 480px;
+    }
+
+    .game-container {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+
+    .game-header {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      gap: 12px;
+    }
+
+    .player-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .player-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 2px solid var(--border);
+      transition: border-color 0.3s, background 0.3s;
+      min-width: 80px;
+      text-align: center;
+    }
+
+    .player-badge.active {
+      border-color: var(--accent);
+      background: rgba(108, 99, 255, 0.1);
+    }
+
+    .player-badge .sym {
+      font-size: 1.6rem;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .player-badge .sym.x {
+      color: var(--x-color);
+    }
+
+    .player-badge .sym.o {
+      color: var(--o-color);
+    }
+
+    .player-badge .name {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      max-width: 90px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .player-badge .lbl {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    .score-display {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--accent);
+      margin-top: 4px;
+    }
+
+    .turn-indicator {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      text-align: center;
+      flex: 1;
+    }
+
+    .board-wrapper {
+      width: 100%;
+      aspect-ratio: 1;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .cell {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(2rem, 8vw, 3.5rem);
+      font-weight: 900;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      user-select: none;
+    }
+
+    .cell:hover:not(.taken):not(.frozen) {
+      background: rgba(108, 99, 255, 0.08);
+      border-color: var(--accent);
+    }
+
+    .cell:active:not(.taken):not(.frozen) {
+      transform: scale(0.94);
+    }
+
+    .cell.taken {
+      cursor: default;
+    }
+
+    .cell.frozen {
+      cursor: not-allowed;
+    }
+
+    .cell.x-mark {
+      color: var(--x-color);
+    }
+
+    .cell.o-mark {
+      color: var(--o-color);
+    }
+
+    .cell.winning {
+      background: var(--win-glow);
+      border-color: var(--accent);
+      animation: winPop 0.4s ease forwards;
+    }
+
+    @keyframes winPop {
+      0% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.08);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .status-bar {
+      width: 100%;
+      text-align: center;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+      min-height: 28px;
+      margin-bottom: 16px;
+    }
+
+    .status-bar.win {
+      color: var(--x-color);
+    }
+
+    .status-bar.loss {
+      color: var(--error);
+    }
+
+    .status-bar.tie {
+      color: var(--o-color);
+    }
+
+    .game-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #play-again-btn {
+      display: none;
+    }
+
+    .room-code-pill {
+      font-size: 0.75rem;
+      color: var(--muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 8px 16px;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      text-align: center;
+    }
+
+    .room-code-pill:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* =====================================================================
+       MODALS
+       ===================================================================== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px 28px;
+      width: 90%;
+      max-width: 340px;
+      text-align: center;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal h2 {
+      font-size: 1.3rem;
+      margin-bottom: 10px;
+    }
+
+    .modal p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+    }
+
+    .modal .btn {
+      max-width: 200px;
+      margin: 0 auto;
+    }
+
+    /* =====================================================================
+       TOAST NOTIFICATIONS
+       ===================================================================== */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 12px 24px;
+      font-size: 0.85rem;
+      color: var(--text);
+      transition: transform 0.3s ease;
+      z-index: 200;
+      white-space: nowrap;
+      max-width: 90%;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast.success {
+      border-color: var(--success);
+      color: var(--success);
+    }
+
+    .toast.error {
+      border-color: var(--error);
+      color: var(--error);
+    }
+
+    .toast.info {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* =====================================================================
+       RESPONSIVE DESIGN
+       ===================================================================== */
+    @media (max-width: 640px) {
+      .card {
+        padding: 24px 20px;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      .game-header {
+        gap: 8px;
+      }
+
+      .player-badge {
+        min-width: 70px;
+        padding: 8px 12px;
+      }
+
+      .player-badge .sym {
+        font-size: 1.3rem;
+      }
+
+      .game-container {
+        padding: 16px;
+      }
+
+      .toast {
+        padding: 10px 20px;
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===================================================================
+       LOBBY SCREEN
+       =================================================================== -->
+  <div id="lobby-screen" class="screen active">
+    <div class="card">
+      <h1><span class="x">X</span> · <span class="o">O</span></h1>
+      <p class="subtitle">Real-time multiplayer — share a Room ID to play</p>
+
+      <div class="form-group">
+        <label for="player-name-input">Your Name</label>
+        <input
+          type="text"
+          id="player-name-input"
+          placeholder="Enter your name"
+          maxlength="20"
+          autocomplete="off"
+        />
+      </div>
+
+      <button class="btn btn-primary" id="create-btn">Create Room</button>
+
+      <div class="divider">or join existing</div>
+
+      <label for="room-input">Room Code</label>
+      <input
+        type="text"
+        id="room-input"
+        placeholder="Enter 6-letter code"
+        maxlength="6"
+      />
+      <div class="error-msg" id="lobby-error"></div>
+      <br />
+      <button class="btn btn-secondary" id="join-btn">Join Room</button>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       WAITING SCREEN
+       =================================================================== -->
+  <div id="waiting-screen" class="screen">
+    <div class="card">
+      <h1><span class="x">X</span> · <span class="o">O</span></h1>
+      <p class="subtitle">Share this code with your opponent</p>
+      <div class="room-code-display" id="waiting-code">------</div>
+      <p class="copy-hint">Click the code to copy it</p>
+      <p class="waiting-player-name" id="waiting-player-name"></p>
+      <div class="pulse-ring"></div>
+      <p class="waiting-label">Waiting for Player 2 to join...</p>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       GAME SCREEN
+       =================================================================== -->
+  <div id="game-screen" class="screen">
+    <div class="game-container">
+      <!-- Game Header with Player Badges -->
+      <div class="game-header">
+        <!-- Player X -->
+        <div class="player-section">
+          <div class="player-badge" id="badge-x">
+            <span class="sym x">X</span>
+            <span class="lbl" id="label-x">You</span>
+          </div>
+          <div class="score-display" id="score-x">0</div>
+        </div>
+
+        <!-- Turn Indicator -->
+        <div class="turn-indicator" id="turn-text">Your turn</div>
+
+        <!-- Player O -->
+        <div class="player-section">
+          <div class="player-badge" id="badge-o">
+            <span class="sym o">O</span>
+            <span class="lbl" id="label-o">Opponent</span>
+          </div>
+          <div class="score-display" id="score-o">0</div>
+        </div>
+      </div>
+
+      <!-- Game Board -->
+      <div class="board-wrapper" id="board"></div>
+
+      <!-- Status Bar -->
+      <div class="status-bar" id="status-bar"></div>
+
+      <!-- Play Again Section -->
+      <div class="game-actions">
+        <button class="btn btn-success" id="play-again-btn">Play Again</button>
+        <div class="play-again-status" id="play-again-status" style="display: none;"></div>
+      </div>
+
+      <!-- Room Code Pill -->
+      <div class="room-code-pill" id="room-pill">Room: <span id="pill-code">------</span></div>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       DISCONNECT MODAL
+       =================================================================== -->
+  <div class="modal-overlay" id="disconnect-modal">
+    <div class="modal">
+      <h2>Opponent Left</h2>
+      <p>Your opponent disconnected from the game.</p>
+      <button class="btn btn-primary" id="modal-home-btn">Back to Lobby</button>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       TOAST NOTIFICATION
+       =================================================================== -->
+  <div class="toast" id="toast">Copied!</div>
+
+  <!-- ===================================================================
+       SCRIPTS
+       =================================================================== -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>
